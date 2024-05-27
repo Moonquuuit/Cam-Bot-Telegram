@@ -5,40 +5,22 @@ import telebot
 from tempfile import NamedTemporaryFile
 from telebot import types
 
-# Инициализация бота
 bot = telebot.TeleBot("You TOKEN")
-
-# ID администратора
 ADMIN_ID = ID Admin
 
-# Словарь для отслеживания времени последнего сообщения каждого пользователя
 last_message_time = {}
-
-# Словарь для хранения временных файлов с последними сделанными фотографиями каждого пользователя
 last_photos = {}
-
-# Словарь для отслеживания количества использований команды /cam каждым пользователем
 cam_usage_count = {}
-
-# Словарь для отслеживания юзернеймов пользователей
 usernames = {}
 
-# Флаг для проверки состояния бота
 is_bot_active = True
-
-# Команды для пользователей
 user_commands = ['/start', '/status', '/cam', '/help', '/menu']
 
 # Функция для применения фильтра к фотографии
 def apply_filter(image):
-    # Возвращаем оригинальное изображение без изменений
     return image
-
-# Функция для сохранения фотографии в облачное хранилище
+    
 def save_to_cloud(photo):
-    # Реализуйте вашу логику сохранения фотографии в облачное хранилище здесь
-    # Например, вы можете использовать API сервиса Google Drive или Dropbox
-    # и предоставить пользователю ссылку на загрузку
     pass
 
 @bot.message_handler(commands=['start'])
@@ -71,39 +53,21 @@ def take_photo(message):
     # Уменьшаем количество "прогревающих" кадров
     for i in range(20):
         cap.read()
-
-    # Делаем снимок    
+   
     ret, frame = cap.read()
 
     # Проверяем успешность считывания кадра
     if ret:
-        # Применяем фильтр к фотографии
         filtered_frame = apply_filter(frame)
-
-        # Создаем временный файл для сохранения снимка
         with NamedTemporaryFile(delete=False, suffix='.png') as temp_photo:
-            # Записываем снимок во временный файл без изменения размера и без сжатия
             cv2.imwrite(temp_photo.name, filtered_frame, [cv2.IMWRITE_PNG_COMPRESSION, 0])
-
-            # Отправляем снимок пользователю
             photo = open(temp_photo.name, 'rb')
             bot.send_photo(message.chat.id, photo)
-
-            # Обновляем время последнего сообщения пользователя
             last_message_time[user_id] = time.time()
-
-            # Сохраняем временный файл с фото для данного пользователя
             last_photos[user_id] = temp_photo.name
-
-            # Увеличиваем счетчик использования команды /cam для данного пользователя
             cam_usage_count[(user_id, username)] = cam_usage_count.get((user_id, username), 0) + 1
-            # Сохраняем юзернейм пользователя
             usernames[user_id] = username
-
-            # Сохраняем фото в облачное хранилище
             save_to_cloud(temp_photo.name)
-
-            # Отправляем уведомление администратору
             user_info = f"Команду вызвал: {message.from_user.first_name} (@{username})"
             bot.send_message(ADMIN_ID, user_info)
 
@@ -127,7 +91,6 @@ def show_menu(message):
 def stop_bot(message):
     if message.from_user.id == ADMIN_ID:
         bot.reply_to(message, "Бот остановлен.")
-        # Остановка бота
         global is_bot_active
         is_bot_active = False
     else:
